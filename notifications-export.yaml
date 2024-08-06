@@ -1,0 +1,82 @@
+---
+- hosts: localhost
+  vars:
+        export_name: "Notifications Export automation"
+        export_format: json
+        export_filename: notifications-export.json
+        export_application: "urn:redhat:application:notifications"
+        export_resource: "urn:redhat:application:notifications:export:events"
+        export_filters: "{}"
+        # HCC service account credentials
+        hcc_client_id: XXXX
+        hcc_client_secret: XXXX
+  tasks:
+  - name: Get service account token
+    ansible.builtin.uri:
+            url: "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token"
+            method: POST
+            body_format: form-urlencoded
+            status_code: 200
+            return_content: true
+            headers:
+                Content-Type: "application/x-www-form-urlencoded"
+            body:
+                client_id: "{{ hcc_client_id }}"
+                client_secret: "{{ hcc_client_secret }}"
+                scope: "api.console"
+                grant_type: "client_credentials"
+    register: result
+
+  - name: Request export
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports"
+            method: POST
+            body_format: json
+            status_code: 202
+            return_content: true
+            headers:
+                accept: "application/json"
+                Content-Type: "application/json"
+                Authorization: "Bearer {{ result.json.access_token }}"
+            body: >
+                {
+                   "name": "{{ export_name }}",
+                   "format": "{{ export_format }}",
+                   "sources": [
+                      {
+                        "application": "{{ export_application }}",
+                        "resource": "{{ export_resource }}",
+                        "filters": "{{ export_filters }}"
+                      }
+                   ]
+                }
+    register: export_result
+
+  - name: Check export status
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports/{{ export_result.json.id }}/status"
+            method: GET
+            status_code: 200
+            return_content: true
+            headers:
+                    Accept: "application/zip"
+                    Authorization: "Bearer {{ result.json.access_token }}"
+    register: export_status
+    until: export_status.json.status == "complete"
+    retries: 3
+    delay: 10
+
+  - name: Download export
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports/{{ export_result.json.id }}"
+            method: GET
+            status_code: 200
+            return_content: true
+            headers:
+                    Accept: "application/zip"
+                    Authorization: "Bearer {{ result.json.access_token }}"
+    register: generated_export
+
+  - copy: 
+        dest: "{{ export_filename }}"
+        content: "{{ generated_export.content }}"
