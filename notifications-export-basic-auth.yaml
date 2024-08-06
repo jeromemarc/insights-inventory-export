@@ -1,0 +1,72 @@
+---
+- hosts: localhost
+  vars:
+        export_name: "Notifications Export automation"
+        export_format: json
+        export_filename: notifications-export.zip
+        export_application: "urn:redhat:application:notifications"
+        export_resource: "urn:redhat:application:notifications:export:events"
+        export_filters: "{}"
+        # HCC Basic Auth credentials
+        hcc_username: XXXX
+        hcc_password: XXXX
+  tasks:
+  - name: Request export
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports"
+            user: "{{ hcc_username }}"
+            password: "{{ hcc_password }}"
+            force_basic_auth: true
+            method: POST
+            body_format: json
+            status_code: 202
+            return_content: true
+            headers:
+                accept: "application/json"
+                Content-Type: "application/json"
+            body: >
+                {
+                   "name": "{{ export_name }}",
+                   "format": "{{ export_format }}",
+                   "sources": [
+                      {
+                        "application": "{{ export_application }}",
+                        "resource": "{{ export_resource }}",
+                        "filters": "{{ export_filters }}"
+                      }
+                   ]
+                }
+    register: export_result
+
+  - name: Check export status
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports/{{ export_result.json.id }}/status"
+            method: GET
+            user: "{{ hcc_username }}"
+            password: "{{ hcc_password }}"
+            force_basic_auth: true
+            status_code: 200
+            return_content: true
+            headers:
+                    Accept: "application/zip"
+    register: export_status
+    until: export_status.json.status == "complete"
+    retries: 3
+    delay: 10
+
+  - name: Download export
+    ansible.builtin.uri:
+            url: "https://console.redhat.com/api/export/v1/exports/{{ export_result.json.id }}"
+            user: "{{ hcc_username }}"
+            password: "{{ hcc_password }}"
+            force_basic_auth: true
+            method: GET
+            status_code: 200
+            return_content: true
+            headers:
+                    Accept: "application/zip"
+    register: generated_export
+
+  - copy: 
+        dest: "{{ export_filename }}"
+        content: "{{ generated_export.content }}"
