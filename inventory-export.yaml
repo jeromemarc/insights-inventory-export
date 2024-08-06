@@ -3,7 +3,7 @@
   vars:
         export_name: "Inventory Export automation"
         export_format: csv
-        export_filename: inventory-export.csv
+        export_filename: inventory-export.zip
         export_application: "urn:redhat:application:inventory"
         export_resource: "urn:redhat:application:inventory:export:systems"
         export_filters: "{}"
