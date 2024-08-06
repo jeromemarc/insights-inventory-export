@@ -3,7 +3,7 @@
   vars:
         export_name: "Notifications Export automation"
         export_format: json
-        export_filename: notifications-export.json
+        export_filename: notifications-export.zip
         export_application: "urn:redhat:application:notifications"
         export_resource: "urn:redhat:application:notifications:export:events"
         export_filters: "{}"
