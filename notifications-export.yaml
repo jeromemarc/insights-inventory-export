@@ -1,5 +1,6 @@
 ---
 - hosts: localhost
+  gather_facts: no
   vars:
         export_name: "Notifications Export automation"
         export_format: json
@@ -46,7 +47,7 @@
                       {
                         "application": "{{ export_application }}",
                         "resource": "{{ export_resource }}",
-                        "filters": "{{ export_filters }}"
+                        "filters": {{ export_filters }}
                       }
                    ]
                 }
