@@ -1,4 +1,10 @@
 ---
+# Basic authentication (discontinued from Dec 2024)
+# Starting Dec 2024, Red Hat will discontinue support for basic authorization to connect to services’ APIs.
+# The Red Hat Hybrid Cloud Console is integrating service accounts with User Access functionality to provide 
+# granular control over access permissions and enhance security. Token-based authentication is recommended. 
+# More information about transitioning from basic authentication to token-based authentication via service 
+# accounts is described on the Red Hat Customer Portal: https://access.redhat.com/articles/7036194
 - hosts: localhost
  gather_facts: no
   vars:
